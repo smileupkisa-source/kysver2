@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-[#f8fafb] text-slate-900 antialiased;
+    font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .kisa-card {
+    @apply bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-slate-200/50 border border-white;
+  }
+  
+  .kisa-input {
+    @apply w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] focus:border-blue-500 focus:bg-white focus:ring-8 focus:ring-blue-500/5 outline-none transition-all text-lg font-bold;
+  }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
