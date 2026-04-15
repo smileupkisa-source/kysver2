@@ -1,9 +1,41 @@
-INFO:     Started server process [19375]
+INFO:     Started server process [29673]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:42956 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42956 - "GET /assets/index-DeKjw2V0.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42964 - "GET /assets/index-B5jDw7J8.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42956 - "GET /favicon.ico HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:41602 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34078 - "GET /system/resources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34078 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34078 - "GET /assets/index-_cusBZnL.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34082 - "GET /assets/index-BiF-BwTe.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34078 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:34078 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%E3%85%85 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%E3%84%B9 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%E3%85%9C HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%E3%85%9C%E3%85%A1 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%E3%85%9C HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%E3%85%9C%E3%85%9C HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%E3%85%9C%E3%85%9C%E3%85%81 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%E3%85%9C%E3%85%9C%E3%85%81%E3%85%81 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%E3%85%9C HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%ED%92%88 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%ED%92%88 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%ED%92%88%EC%A0%9C HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%ED%92%88%EC%A0%B2 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51784 - "GET /ksic/search?query=%EC%8B%9D%EB%A3%8C%ED%92%88%EC%A0%9C%EC%A1%B0 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43984 - "GET /ksic/search?query=%E3%85%8E HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43984 - "GET /ksic/search?query=%ED%98%B8 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43984 - "GET /ksic/search?query=%ED%99%94 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43984 - "GET /ksic/search?query=%ED%99%AF HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43984 - "GET /ksic/search?query=%ED%99%94%ED%95%98 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43984 - "GET /ksic/search?query=%ED%99%94%ED%95%99 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43984 - "GET /ksic/search?query=%ED%99%94%ED%95%99%EC%A0%9C HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43984 - "GET /ksic/search?query=%ED%99%94%ED%95%99%EC%A0%9C%ED%91%B8 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:43984 - "GET /ksic/search?query=%ED%99%94%ED%95%99%EC%A0%9C%ED%92%88 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56832 - "GET /ksic/search?query=%ED%99%94%ED%95%99%EC%A0%9C HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56832 - "GET /ksic/search?query=%ED%99%94%ED%95%99 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56832 - "GET /ksic/search?query=%ED%99%94 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46702 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:46702 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:46702 - "GET / HTTP/1.1" 304 Not Modified
