@@ -3,10 +3,11 @@ import axios from 'axios';
 import { 
   Search, Users, Cpu, ClipboardCheck, 
   BarChart3, Building, 
-  CheckCircle2, ShieldCheck, AlertTriangle, Plus, Trash2, FileText
+  CheckCircle2, ShieldCheck, AlertTriangle, Plus, Trash2, FileText,
+  X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
-interface KSICItem { code: string; name: string; }
+interface KSICItem { code: string; name: string; full_name?: string; }
 interface DiagnosisItem { title: string; is_target: boolean; reason: string; }
 interface SubstanceClass { substance: string; class: string; }
 interface AnalysisResult { 
@@ -25,22 +26,39 @@ function App() {
   const [substances, setSubstances] = useState([{ name_or_cas: '', quantity: '' }]);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Autocomplete 및 모달 상태
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // 실시간 검색 및 자동 코드 바인딩
+  const [showModal, setShowModal] = useState(false);
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
+  const [modalResults, setModalResults] = useState<KSICItem[]>([]);
+  const [modalPage, setModalPage] = useState(1);
+  const [modalTotalPages, setModalTotalPages] = useState(1);
+  const [modalTotal, setModalTotal] = useState(0);
+  const [tempSelected, setTempSelected] = useState<KSICItem | null>(null);
+
+  // 계층형 선택 상태
+  const [mainList, setMainList] = useState<KSICItem[]>([]);
+  const [medList, setMedList] = useState<KSICItem[]>([]);
+  const [smallList, setSmallList] = useState<KSICItem[]>([]);
+  const [subList, setSubList] = useState<KSICItem[]>([]);
+  const [finalList, setFinalList] = useState<KSICItem[]>([]);
+
+  const [selectedMain, setSelectedMain] = useState('');
+  const [selectedMed, setSelectedMed] = useState('');
+  const [selectedSmall, setSelectedSmall] = useState('');
+  const [selectedSub, setSelectedSub] = useState('');
+
+  // 실시간 검색 및 자동 코드 바인딩 (Autocomplete)
   useEffect(() => {
     if (categoryName.length >= 1 && !selectedKSIC) {
       const timer = setTimeout(() => {
-        axios.get(`/ksic/search?query=${categoryName}`)
+        axios.get(`/ksic/search?query=${categoryName}&page_size=30`)
           .then(res => {
-            setKsicResults(res.data);
-            setShowDropdown(res.data.length > 0);
-            const exactMatch = res.data.find((i: KSICItem) => i.name === categoryName);
-            if (exactMatch) {
-              setSelectedKSIC(exactMatch);
-              setShowDropdown(false);
-            }
+            setKsicResults(res.data.items);
+            setShowDropdown(res.data.items.length > 0);
           });
       }, 250);
       return () => clearTimeout(timer);
@@ -48,6 +66,83 @@ function App() {
       setShowDropdown(false);
     }
   }, [categoryName, selectedKSIC]);
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownRef]);
+
+  // 계층 데이터 패치
+  useEffect(() => {
+    if (showModal) {
+      axios.get('/ksic/hierarchy').then(res => setMainList(res.data));
+    }
+  }, [showModal]);
+
+  useEffect(() => {
+    if (selectedMain) {
+      axios.get(`/ksic/hierarchy?main=${selectedMain}`).then(res => {
+        setMedList(res.data || []);
+        setSelectedMed('');
+        setSelectedSmall('');
+        setSelectedSub('');
+        setFinalList([]);
+      });
+    }
+  }, [selectedMain]);
+
+  useEffect(() => {
+    if (selectedMed) {
+      axios.get(`/ksic/hierarchy?main=${selectedMain}&med=${selectedMed}`).then(res => {
+        setSmallList(res.data || []);
+        setSelectedSmall('');
+        setSelectedSub('');
+        setFinalList([]);
+      });
+    }
+  }, [selectedMed]);
+
+  useEffect(() => {
+    if (selectedSmall) {
+      axios.get(`/ksic/hierarchy?main=${selectedMain}&med=${selectedMed}&small=${selectedSmall}`).then(res => {
+        setSubList(res.data || []);
+        setSelectedSub('');
+        setFinalList([]);
+      });
+    }
+  }, [selectedSmall]);
+
+  useEffect(() => {
+    if (selectedSub) {
+      axios.get(`/ksic/hierarchy?main=${selectedMain}&med=${selectedMed}&small=${selectedSmall}&sub=${selectedSub}`).then(res => {
+        setFinalList(res.data || []);
+      });
+    }
+  }, [selectedSub]);
+
+  // 모달 검색 실행
+  const fetchModalResults = async (query: string, page: number) => {
+    try {
+      const res = await axios.get(`/ksic/search?query=${query}&page=${page}&page_size=10`);
+      setModalResults(res.data.items);
+      setModalTotalPages(res.data.total_pages);
+      setModalTotal(res.data.total);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (showModal) {
+      fetchModalResults(modalSearchQuery, modalPage);
+    }
+  }, [modalSearchQuery, modalPage, showModal]);
 
   const addSubstance = () => setSubstances([...substances, { name_or_cas: '', quantity: '' }]);
   const removeSubstance = (idx: number) => setSubstances(substances.filter((_, i) => i !== idx));
@@ -163,26 +258,47 @@ function App() {
 
                 {/* 2. 업종 분류 */}
                 <div className="space-y-3 relative" ref={dropdownRef}>
-                  <label className="text-sm font-black text-slate-500 ml-1">업종 분류 (KSIC)</label>
+                  <div className="flex items-center justify-between ml-1">
+                    <label className="text-sm font-black text-slate-500">업종 분류 (KSIC)</label>
+                    <button 
+                      type="button"
+                      onClick={() => setShowModal(true)}
+                      className="text-[10px] font-black text-slate-400 hover:text-blue-600 transition-colors"
+                    >
+                      상세 단계별 검색
+                    </button>
+                  </div>
                   <div className="flex gap-4">
                     <div className="relative flex-[7]">
                       <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                       <input 
                         type="text" 
                         className="w-full pl-14 pr-10 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold"
-                        placeholder="업종명 검색 (예: 화학제품)"
+                        placeholder="업종명 또는 코드 입력 (예: 01110)"
                         value={categoryName}
-                        onChange={(e) => { setCategoryName(e.target.value); setSelectedKSIC(null); }}
-                        onFocus={() => categoryName.length > 0 && setShowDropdown(true)}
+                        onChange={(e) => { 
+                          setCategoryName(e.target.value); 
+                          setSelectedKSIC(null); 
+                        }}
+                        onFocus={() => categoryName.length >= 1 && setShowDropdown(true)}
                       />
-                      {showDropdown && (
+                      {showDropdown && Array.isArray(ksicResults) && ksicResults.length > 0 && (
                         <div className="absolute top-full left-0 right-0 mt-3 bg-white border border-slate-100 rounded-2xl shadow-2xl z-[999] overflow-hidden border-t-4 border-blue-600">
-                          <ul className="max-h-60 overflow-y-auto p-2">
+                          <ul className="max-h-80 overflow-y-auto p-2">
                             {ksicResults.map(item => (
-                              <li key={item.code} className="flex items-center gap-4 p-4 hover:bg-blue-50 rounded-xl cursor-pointer transition-all"
-                                onClick={() => { setSelectedKSIC(item); setCategoryName(item.name); setShowDropdown(false); }}>
-                                <span className="bg-slate-100 px-2 py-1 rounded text-[10px] font-black text-slate-500">{item.code}</span>
-                                <span className="text-sm font-bold text-slate-700">{item.name}</span>
+                              <li key={item.code} className="p-4 hover:bg-blue-50 rounded-xl cursor-pointer transition-all border-b border-slate-50 last:border-0"
+                                onClick={() => { 
+                                  setSelectedKSIC(item); 
+                                  setCategoryName(item.name); 
+                                  setShowDropdown(false); 
+                                }}>
+                                <div className="flex items-center gap-3 mb-1">
+                                  <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-black">{item.code}</span>
+                                  <span className="text-sm font-black text-slate-800">{item.name}</span>
+                                </div>
+                                <div className="text-[11px] font-bold text-slate-400 pl-1">
+                                  {item.full_name}
+                                </div>
                               </li>
                             ))}
                           </ul>
@@ -235,11 +351,12 @@ function App() {
                 </div>
 
                 <button 
+                  type="button"
                   className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all shadow-xl
                     ${isFormValid && !loading 
                       ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/30' 
                       : 'bg-slate-100 text-slate-300 cursor-not-allowed'}`}
-                  onClick={handleAnalyze}
+                  onClick={(e) => { e.preventDefault(); handleAnalyze(); }}
                   disabled={!isFormValid || loading}
                 >
                   {loading ? <Cpu className="animate-spin" size={24} /> : "정밀 분석 실행"}
@@ -331,6 +448,192 @@ function App() {
 
         </div>
       </main>
+
+      {/* KSIC 검색 모달 */}
+      {showModal && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowModal(false)}
+        >
+          <div 
+            className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 헤더 */}
+            <div className="p-6 border-b flex items-center justify-between">
+              <h3 className="text-xl font-black text-slate-800">업종(코드 검색)</h3>
+              <button 
+                type="button"
+                onClick={(e) => { e.preventDefault(); setShowModal(false); }} 
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X size={24} className="text-slate-400" />
+              </button>
+            </div>
+
+            {/* 검색 및 계층 선택 */}
+            <div className="p-6 bg-slate-50 space-y-4">
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <input 
+                    type="text" 
+                    className="w-full h-12 pl-10 pr-4 bg-white border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500"
+                    placeholder="업종명 또는 코드로 직접 검색"
+                    value={modalSearchQuery}
+                    onChange={(e) => { 
+                      setModalSearchQuery(e.target.value); 
+                      setModalPage(1);
+                      if (e.target.value) {
+                        setSelectedMain('');
+                      }
+                    }}
+                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <select 
+                  className="h-12 px-4 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-blue-500"
+                  value={selectedMain}
+                  onChange={(e) => { setSelectedMain(e.target.value); setModalSearchQuery(''); }}
+                >
+                  <option value="">대분류 선택</option>
+                  {Array.isArray(mainList) && mainList.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}
+                </select>
+                <select 
+                  className="h-12 px-4 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-blue-500"
+                  value={selectedMed}
+                  disabled={!selectedMain}
+                  onChange={(e) => setSelectedMed(e.target.value)}
+                >
+                  <option value="">중분류 선택</option>
+                  {Array.isArray(medList) && medList.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}
+                </select>
+                <select 
+                  className="h-12 px-4 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-blue-500"
+                  value={selectedSmall}
+                  disabled={!selectedMed}
+                  onChange={(e) => setSelectedSmall(e.target.value)}
+                >
+                  <option value="">소분류 선택</option>
+                  {Array.isArray(smallList) && smallList.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}
+                </select>
+                <select 
+                  className="h-12 px-4 bg-white border-2 border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-blue-500"
+                  value={selectedSub}
+                  disabled={!selectedSmall}
+                  onChange={(e) => setSelectedSub(e.target.value)}
+                >
+                  <option value="">세분류 선택</option>
+                  {Array.isArray(subList) && subList.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* 테이블 */}
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-slate-50 sticky top-0">
+                  <tr>
+                    <th className="px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b">코드</th>
+                    <th className="px-6 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b">분류명</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(modalSearchQuery ? (Array.isArray(modalResults) ? modalResults : []) : (Array.isArray(finalList) ? finalList : [])).length > 0 ? (
+                    (modalSearchQuery ? modalResults : finalList).map((item) => (
+                      <tr 
+                        key={item.code} 
+                        className={`cursor-pointer transition-colors ${tempSelected?.code === item.code ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                        onClick={() => setTempSelected(item)}
+                      >
+                        <td className="px-6 py-4 text-sm font-bold text-slate-500 border-b">{item.code}</td>
+                        <td className="px-6 py-4 text-sm font-bold text-slate-700 border-b">{item.name}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={2} className="px-6 py-20 text-center text-slate-400 font-bold">
+                        {modalSearchQuery ? '검색 결과가 없습니다.' : '분류를 선택하거나 키워드로 검색하세요.'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 페이지네이션 (검색 시에만 표시) */}
+            {modalSearchQuery && (
+              <div className="p-6 border-t flex items-center justify-center gap-4">
+              <button 
+                disabled={modalPage === 1}
+                onClick={() => setModalPage(prev => prev - 1)}
+                className="p-2 disabled:opacity-30 hover:bg-slate-100 rounded-full transition-all"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, modalTotalPages) }, (_, i) => {
+                  let pageNum = modalPage;
+                  if (modalTotalPages <= 5) pageNum = i + 1;
+                  else {
+                    if (modalPage <= 3) pageNum = i + 1;
+                    else if (modalPage >= modalTotalPages - 2) pageNum = modalTotalPages - 4 + i;
+                    else pageNum = modalPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setModalPage(pageNum)}
+                      className={`w-10 h-10 rounded-xl font-black text-sm transition-all ${modalPage === pageNum ? 'bg-slate-800 text-white shadow-lg' : 'hover:bg-slate-100 text-slate-400'}`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                {modalTotalPages > 5 && modalPage < modalTotalPages - 2 && <span className="px-2 text-slate-300">...</span>}
+              </div>
+
+              <button 
+                disabled={modalPage === modalTotalPages}
+                onClick={() => setModalPage(prev => prev + 1)}
+                className="p-2 disabled:opacity-30 hover:bg-slate-100 rounded-full transition-all"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+            )}
+
+            {/* 푸터 버튼 */}
+            <div className="p-6 bg-slate-50 border-t flex justify-end gap-3">
+              <button 
+                type="button"
+                onClick={(e) => { e.preventDefault(); setShowModal(false); }}
+                className="px-8 py-3 bg-white border-2 border-slate-200 rounded-xl font-black text-slate-500 hover:bg-slate-100 transition-all"
+              >
+                취소
+              </button>
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (tempSelected) {
+                    setSelectedKSIC(tempSelected);
+                    setShowModal(false);
+                  }
+                }}
+                disabled={!tempSelected}
+                className={`px-8 py-3 rounded-xl font-black text-white transition-all shadow-lg ${tempSelected ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30' : 'bg-slate-300 cursor-not-allowed'}`}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

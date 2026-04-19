@@ -87,6 +87,89 @@ class AnalysisResult(BaseModel):
     substance_classes: List[Dict[str, str]]
     risk_score: int
 
+@app.get("/ksic/search")
+def search_ksic(query: str = "", page: int = 1, page_size: int = 10):
+    if not query:
+        return {"total": 0, "items": [], "page": page, "page_size": page_size, "total_pages": 0}
+
+    query = query.lower()
+    filtered = []
+    seen_codes = set()
+
+    for item in KSIC_FULL_DATA:
+        # 검색 대상: 최종명칭, 코드, 또는 상위 분류명
+        if (query in item['final_name'].lower() or 
+            query in item['final_code'].lower() or 
+            query in item['med_name'].lower() or 
+            query in item['main_name'].lower()):
+            
+            code = item['final_code']
+            if code not in seen_codes:
+                # 대분류 > 중분류 > 세세분류 형식으로 이름 구성
+                display_name = f"{item['main_name']} > {item['med_name']} > {item['final_name']}"
+                filtered.append({
+                    "code": code,
+                    "name": item['final_name'],
+                    "full_name": display_name
+                })
+                seen_codes.add(code)
+    
+    start = (page - 1) * page_size
+    end = start + page_size
+    
+    return {
+        "total": len(filtered),
+        "items": filtered[start:end],
+        "page": page,
+        "page_size": page_size,
+        "total_pages": (len(filtered) + page_size - 1) // page_size
+    }
+
+@app.get("/ksic/hierarchy")
+def get_ksic_hierarchy(main: str = None, med: str = None, small: str = None, sub: str = None):
+    if not main:
+        # 대분류 리스트
+        unique = {}
+        for item in KSIC_FULL_DATA:
+            if item['main_code'] not in unique:
+                unique[item['main_code']] = item['main_name']
+        return [{"code": k, "name": v} for k, v in sorted(unique.items())]
+    
+    if not med:
+        # 중분류 리스트
+        unique = {}
+        for item in KSIC_FULL_DATA:
+            if item['main_code'] == main:
+                if item['med_code'] not in unique:
+                    unique[item['med_code']] = item['med_name']
+        return [{"code": k, "name": v} for k, v in sorted(unique.items())]
+
+    if not small:
+        # 소분류 리스트
+        unique = {}
+        for item in KSIC_FULL_DATA:
+            if item['med_code'] == med:
+                if item['small_code'] not in unique:
+                    unique[item['small_code']] = item['small_name']
+        return [{"code": k, "name": v} for k, v in sorted(unique.items())]
+
+    if not sub:
+        # 세분류 리스트
+        unique = {}
+        for item in KSIC_FULL_DATA:
+            if item['small_code'] == small:
+                if item['sub_code'] not in unique:
+                    unique[item['sub_code']] = item['sub_name']
+        return [{"code": k, "name": v} for k, v in sorted(unique.items())]
+
+    # 세세분류 (최종)
+    unique = {}
+    for item in KSIC_FULL_DATA:
+        if item['sub_code'] == sub:
+            if item['final_code'] not in unique:
+                unique[item['final_code']] = item['final_name']
+    return [{"code": k, "name": v} for k, v in sorted(unique.items())]
+
 @app.get("/system/resources")
 def get_system_resources():
     try:
